@@ -1,0 +1,39 @@
+version: '2'
+services:
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile_development
+    ports:
+      - "443:443"
+      - "80:80"
+    links:
+      - backend:backend
+    volumes:
+      - public:/public
+  backend:
+    build: ./backend
+    command: ["pm2", "start", "processes.json", "--no-daemon", "--watch"]
+    ports:
+      - "3400:3400"
+    volumes:
+      - ./backend:/app
+      - public:/public
+    links:
+      - mongodb:mongodb
+      - redis
+  mongodb:
+    image: mongo
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    volumes:
+      - ./data/db:/data/db
+    ports:
+        - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null # --quiet
+  redis:
+    image: "redis:alpine"
+
+volumes:
+  public:
